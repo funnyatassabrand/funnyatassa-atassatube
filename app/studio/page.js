@@ -1,88 +1,57 @@
-'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { FULL_MASTER_CONFIG } from '../../lib/siteConfig';
-function flatten(obj, prefix='', out=[]) {
-  Object.keys(obj).forEach(k=>{
-    const path = prefix ? prefix+'.'+k : k;
-    const v = obj[k];
-    if (v && typeof v==='object' && !Array.isArray(v)) flatten(v, path, out);
-    else out.push({ path, value: v, type: typeof v });
-  });
-  return out;
-}
-function setPath(obj, path, val){
-  const parts = path.split('.'); let cur=obj;
-  parts.forEach((p,i)=>{ if(i===parts.length-1) cur[p]=val; else { if(!cur[p]) cur[p]={}; cur=cur[p]; } });
-  return obj;
-}
+"use client";
+import { useEffect, useState } from "react";
+import { SITE } from "../../lib/siteConfig";
+const FIREBASE_CONFIG = { apiKey: "PASTE_FIREBASE_API_KEY", authDomain: "atassatube-1b360.firebaseapp.com", projectId: "atassatube-1b360", storageBucket: "atassatube-1b360.firebasestorage.app", messagingSenderId: "PASTE_MESSAGING_SENDER_ID", appId: "PASTE_APP_ID" };
+const OWNER_EMAIL = "funnyatassabrand@gmail.com";
+const GA_ID = "G-H2YTGQXC8G";
+const ADSENSE_ID = "ca-pub-5034040629777244";
+const SECTIONS = ["Header","Videos","Gaps","Main Site Gaps","Ads","Main Site","ATASSA AI","About","Atassa Picks","Cast","Support","Legal","Footer","Colors","Links","Text","Size","Numbers","Figures","Letters","Alphabet","Digits","Signs","Signals","Configuration","Universal","Recycle Bin","Theme"];
+const DEFAULT_GAPS = [
+  { id:"gap-1", scope:"AtassaTube", label:"Gap after header", size:"medium", enabled:true, adEnabled:true, adSlot:"1111111111" },
+  { id:"gap-2", scope:"AtassaTube", label:"Gap after videos row 1", size:"large", enabled:true, adEnabled:true, adSlot:"2222222222" },
+  { id:"gap-3", scope:"AtassaTube", label:"Gap before footer", size:"medium", enabled:true, adEnabled:false, adSlot:"" },
+  { id:"mgap-1", scope:"Main Site", label:"Main Site - Gap after header", size:"medium", enabled:true, adEnabled:true, adSlot:"3333333333" },
+  { id:"mgap-2", scope:"Main Site", label:"Main Site - Gap inside TRENDING VIDEOS / site-inside-site", size:"large", enabled:true, adEnabled:true, adSlot:"4444444444" },
+  { id:"mgap-3", scope:"Main Site", label:"Main Site - Gap before footer", size:"medium", enabled:true, adEnabled:false, adSlot:"" },
+];
 export default function Studio(){
-  const [cfg,setCfg]=useState(FULL_MASTER_CONFIG);
-  const [q,setQ]=useState('');
-  const [section,setSection]=useState('all');
-  const [msg,setMsg]=useState('');
-  const [authed,setAuthed]=useState(false);
-  const [pw,setPw]=useState('');
-  useEffect(()=>{
-    try{ const s=localStorage.getItem('atassatube_site_config'); if(s) setCfg({...FULL_MASTER_CONFIG,...JSON.parse(s)}); }catch(e){}
-  },[]);
-  const rows = useMemo(()=>flatten(cfg),[cfg]);
-  const sections = useMemo(()=>['all',...new Set(rows.map(r=>r.path.split('.')[0]))],[rows]);
-  const filtered = rows.filter(r=>{
-    if(section!=='all' && !r.path.startsWith(section+'.') && r.path!==section) return false;
-    if(!q) return true;
-    return (r.path+' '+String(r.value)).toLowerCase().includes(q.toLowerCase());
-  });
-  function update(path,val,orig){
-    let nv=val;
-    if(typeof orig==='boolean') nv = (val==='true'||val===true);
-    if(typeof orig==='number') nv = Number(val);
-    const copy = JSON.parse(JSON.stringify(cfg));
-    setPath(copy,path,nv); setCfg(copy);
-  }
-  function saveLocal(){
-    localStorage.setItem('atassatube_site_config', JSON.stringify(cfg));
-    setMsg('Saved locally. Now tap Publish to update www.funnyatassa.com + AtassaTube.');
-  }
-  async function publish(){
-    saveLocal();
-    setMsg('Publishing to Supabase app_config id=1...');
-    try{
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if(!url||!key){ setMsg('Saved locally. Add NEXT_PUBLIC_SUPABASE_URL + ANON_KEY in Vercel to Publish to live site.'); return; }
-      const res = await fetch(url+'/rest/v1/app_config?id=eq.1',{method:'PATCH',headers:{'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({config:cfg,updated_at:new Date().toISOString()})});
-      if(!res.ok) throw new Error('Publish failed '+res.status);
-      setMsg('Published! Both www.funnyatassa.com + AtassaTube will use this config.');
-    }catch(e){ setMsg('Publish error: '+e.message+' — still saved locally.'); }
-  }
-  if(!authed) return (<main style={{padding:20,fontFamily:'system-ui',maxWidth:480,margin:'0 auto'}}>
-    <h1>Studio — Admin Panel</h1><p>Owner only. Session only. Close = logged out.</p>
-    <input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="Owner password" style={{width:'100%',padding:14,borderRadius:10,border:'1px solid #ddd'}} />
-    <button onClick={()=>{ if(pw.length<1){setMsg('Enter password');return;} setAuthed(true); }} style={{marginTop:12,width:'100%',padding:14,background:'#D90429',color:'#fff',border:0,borderRadius:10}}>Unlock Studio</button>
-    <p>{msg}</p>
-  </main>);
-  return (<main style={{padding:16,fontFamily:'system-ui',maxWidth:900,margin:'0 auto'}}>
-    <h1>Studio — Admin Panel for www.funnyatassa.com</h1>
-    <p>Controls EVERYTHING: Header, Hero, Trending, Comedy, Atassa Picks, ATASSA AI, Cast, About, Support, Legal, Footer, Colors, Font, Logos, even smallest text / number / symbol.</p>
-    <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search ANY word — e.g. 18+ , ₦ , • , Watch Now , Deals Are Real" style={{width:'100%',padding:14,borderRadius:10,border:'1px solid #ddd',marginBottom:10}} />
-    <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>{sections.map(s=>(<button key={s} onClick={()=>setSection(s)} style={{padding:'8px 12px',borderRadius:20,border:0,background:section===s?'#D90429':'#eee',color:section===s?'#fff':'#111'}}>{s}</button>))}</div>
-    <p>{filtered.length} fields found • {msg}</p>
-    {filtered.map(r=>(
-      <div key={r.path} style={{border:'1px solid #eee',padding:10,borderRadius:10,marginBottom:8}}>
-        <div style={{fontSize:12,color:'#666',wordBreak:'break-all'}}>{r.path}</div>
-        {typeof r.value==='boolean' ? (
-          <select value={String(r.value)} onChange={e=>update(r.path,e.target.value,r.value)} style={{width:'100%',padding:10}}><option value="true">true — SHOW</option><option value="false">false — HIDE</option></select>
-        ) : String(r.value).length>80 ? (
-          <textarea value={String(r.value)} onChange={e=>update(r.path,e.target.value,r.value)} style={{width:'100%',padding:10,minHeight:80}} />
-        ) : (
-          <input value={String(r.value)} onChange={e=>update(r.path,e.target.value,r.value)} style={{width:'100%',padding:10}} />
-        )}
-      </div>
-    ))}
-    <div style={{display:'flex',gap:10,position:'sticky',bottom:10,background:'#fff',padding:10}}>
-      <button onClick={saveLocal} style={{flex:1,padding:14,background:'#111',color:'#fff',border:0,borderRadius:10}}>Save Draft</button>
-      <button onClick={publish} style={{flex:1,padding:14,background:'#D90429',color:'#fff',border:0,borderRadius:10}}>Publish to Live Site</button>
-      <button onClick={()=>{localStorage.removeItem('atassatube_site_config'); setCfg(FULL_MASTER_CONFIG); setMsg('Reset to Master Config');}} style={{padding:14,background:'#eee',border:0,borderRadius:10}}>Reset</button>
-    </div>
+  const [step,setStep]=useState("login");
+  const [password,setPassword]=useState(""); const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
+  const [section,setSection]=useState("Videos");
+  const [videos,setVideos]=useState([]); const [title,setTitle]=useState(""); const [url,setUrl]=useState(""); const [saved,setSaved]=useState("");
+  const [gaps,setGaps]=useState(DEFAULT_GAPS);
+  const [universal,setUniversal]=useState([]);
+  const [trash,setTrash]=useState([]);
+  const [theme,setTheme]=useState("light");
+  const [uKey,setUKey]=useState(""); const [uVal,setUVal]=useState(""); const [uType,setUType]=useState("Text");
+  useEffect(()=>{ try{ const v=JSON.parse(localStorage.getItem("atassatube_videos")||"[]"); if(v.length) setVideos(v); else if(SITE?.videos?.length) setVideos(SITE.videos); const g=JSON.parse(localStorage.getItem("atassatube_gaps")||"[]"); if(g.length) setGaps(g); const u=JSON.parse(localStorage.getItem("atassatube_universal")||"[]"); if(u.length) setUniversal(u); let tr=JSON.parse(localStorage.getItem("atassatube_trash")||"[]"); const now=Date.now(); const kept=tr.filter(x=>{ const age=(now-new Date(x.deletedAt||now).getTime())/(1000*60*60*24); return age<=90; }); if(kept.length!==tr.length){ localStorage.setItem("atassatube_trash",JSON.stringify(kept)); tr=kept; } if(tr.length) setTrash(tr); const th=localStorage.getItem("atassa_theme")||"light"; setTheme(th); }catch(e){} if(sessionStorage.getItem("atassa_studio_session")==="1") setStep("studio"); },[]);
+  async function login(e){ e.preventDefault(); setErr(""); setBusy(true); try{ if(!password) throw new Error("Enter your owner password."); if(FIREBASE_CONFIG.apiKey.includes("PASTE")) throw new Error("Firebase config not pasted yet in app/studio/page.js - paste the 6 values from Firebase Console > Project Settings > Your apps, then try again."); const {initializeApp,getApps}=await import("firebase/app"); const {getAuth,setPersistence,browserSessionPersistence,signInWithEmailAndPassword}=await import("firebase/auth"); const app=getApps().length?getApps()[0]:initializeApp(FIREBASE_CONFIG); const auth=getAuth(app); await setPersistence(auth,browserSessionPersistence); await signInWithEmailAndPassword(auth,OWNER_EMAIL,password); sessionStorage.setItem("atassa_studio_session","1"); setPassword(""); setStep("studio"); }catch(e2){ setErr((e2.message||"Login failed.").replace("Firebase:","")); } finally{ setBusy(false); } }
+  const DAYS_LEFT=(d)=>{ const age=(Date.now()-new Date(d||Date.now()).getTime())/(1000*60*60*24); return Math.max(0,Math.ceil(90-age)); };
+  function moveToTrash(item){ const nt=[{...item,deletedAt:new Date().toISOString()},...trash]; setTrash(nt); localStorage.setItem("atassatube_trash",JSON.stringify(nt)); }
+  function restoreFromTrash(idx){ const item=trash[idx]; const nt=trash.filter((_,j)=>j!==idx); setTrash(nt); localStorage.setItem("atassatube_trash",JSON.stringify(nt)); if(item.kind==="video"){ const nv=[...videos,item.data]; setVideos(nv); localStorage.setItem("atassatube_videos",JSON.stringify(nv)); } if(item.kind==="gap"){ const ng=[...gaps,item.data]; setGaps(ng); localStorage.setItem("atassatube_gaps",JSON.stringify(ng)); } if(item.kind==="universal"){ const nu=[...universal,item.data]; setUniversal(nu); localStorage.setItem("atassatube_universal",JSON.stringify(nu)); } setSaved("Restored from Recycle Bin."); }
+  function deleteForever(idx){ const nt=trash.filter((_,j)=>j!==idx); setTrash(nt); localStorage.setItem("atassatube_trash",JSON.stringify(nt)); }
+  function saveGaps(ng){ setGaps(ng); localStorage.setItem("atassatube_gaps",JSON.stringify(ng)); }
+  function addVideo(){ if(!title){ setSaved("Type a video title first."); return; } const nv=[...videos,{id:"v"+Date.now(),title,url,category:"Comedy"}]; setVideos(nv); localStorage.setItem("atassatube_videos",JSON.stringify(nv)); setTitle(""); setUrl(""); setSaved("Video saved locally. Tap Publish to make it live everywhere."); }
+  function delVideo(id){ const item=videos.find(v=>v.id===id); if(item) moveToTrash({kind:"video",scope:"AtassaTube + Main Site + Site-inside-site",label:item.title||"Video",data:[STRIPPED] const nv=videos.filter(v=>v.id!==id); setVideos(nv); localStorage.setItem("atassatube_videos",JSON.stringify(nv)); setSaved("Moved to Recycle Bin - not gone forever. Open Recycle Bin to Restore."); }
+  async function publish(){ setSaved("Publishing..."); try{ const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL; const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; if(!supabaseUrl||!supabaseKey) throw new Error("Supabase env vars not set in Vercel (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY). Saved locally until you add them."); const res=await fetch(`${supabaseUrl}/rest/v1/app_config?id=eq.1`,{method:"PATCH",headers:{apikey:supabaseKey,Authorization:`Bearer ${supabaseKey}`,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({config:{...SITE,videos,gaps,universal,theme,gaId:GA_ID,adsenseId:ADSENSE_ID,updatedAt:new Date().toISOString()}})}); if(!res.ok) throw new Error("Supabase Publish failed: "+res.status); setSaved("Published! One edit now changes Main Site + ATASSA AI + AtassaTube (app_config id=1)."); }catch(e){ setSaved(e.message); } }
+  function logout(){ sessionStorage.removeItem("atassa_studio_session"); setStep("login"); setPassword(""); }
+  if(step==="login"){ return (<main style={{fontFamily:"system-ui",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"#fff"}}><form onSubmit={login} style={{width:"100%",maxWidth:360,border:"1px solid #eee",borderRadius:16,padding:20}}><h2 style={{marginTop:0}}>Studio — Owner Login</h2><p style={{fontSize:13,color:"#555"}}>Owner: {OWNER_EMAIL}<br/>Type password only. No new password, no new account.</p><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Owner password" autoFocus style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",boxSizing:"border-box"}} />{err && <p style={{color:"red",fontSize:13}}>{err}</p>}<button disabled={busy} style={{width:"100%",marginTop:12,background:"#e11d48",color:"#fff",border:"none",borderRadius:999,padding:12,fontWeight:700}}>{busy?"Checking...":"Enter Studio"}</button><button type="button" onClick={()=>window.location.href="/"} style={{width:"100%",marginTop:8,background:"#eee",border:"none",borderRadius:999,padding:10}}>Back to AtassaTube</button><p style={{fontSize:11,color:"#888",textAlign:"center"}}>Session-only: closing the tab logs you out. Wrong password fails.</p></form></main>); }
+  const showGaps = section==="Gaps" ? gaps.filter(g=>g.scope==="AtassaTube") : section==="Main Site Gaps" ? gaps.filter(g=>g.scope==="Main Site") : [];
+  const isUniversal = section==="Universal"||["Text","Size","Numbers","Figures","Letters","Alphabet","Digits","Signs","Signals","Configuration"].includes(section);
+  return (<main style={{fontFamily:"system-ui",minHeight:"100vh",background:theme==="dark"?"#0f0f0f":"#fff",color:theme==="dark"?"#fff":"#111",padding:16}}>
+    <header style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><h2 style={{margin:0}}>Studio Admin Panel</h2><p style={{margin:"4px 0",fontSize:12,color:"#666"}}>Controls funnyatassa.com + ATASSA AI + AtassaTube • Owner only</p></div><button onClick={()=>{ const nt=theme==="dark"?"light":"dark"; setTheme(nt); localStorage.setItem("atassa_theme",nt); }} style={{background:"#eee",border:"none",borderRadius:999,padding:"8px 14px",marginRight:8}}>{theme==="dark"?"☀️ Light":"🌙 Dark"}</button><button onClick={logout} style={{background:"#111",color:"#fff",border:"none",borderRadius:999,padding:"8px 14px"}}>Log out</button></header>
+    <input placeholder="🔍 Search Studio - header, videos, gaps, ads, main site, AI, text, size, numbers..." onChange={e=>setSection(e.target.value||"Videos")} style={{width:"100%",padding:12,borderRadius:999,border:"1px solid #ddd",margin:"12px 0",boxSizing:"border-box"}} />
+    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SECTIONS.map(s=>(<button key={s} onClick={()=>setSection(s)} style={{border:"1px solid #ddd",borderRadius:999,padding:"6px 12px",background:section===s?"#111":"#fff",color:section===s?"#fff":"#111"}}>{s}</button>))}</div>
+    <h3 style={{marginTop:20}}>{section}</h3>
+    {section==="Videos" && (<div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Video title" style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",marginBottom:8,boxSizing:"border-box"}} /><input value={url} onChange={e=>setUrl(e.target.value)} placeholder="Video URL - Cloudinary / Firebase URL" style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",marginBottom:8,boxSizing:"border-box"}} /><button onClick={addVideo} style={{background:"#e11d48",color:"#fff",border:"none",borderRadius:999,padding:"10px 18px",fontWeight:700}}>Add Video</button><div style={{marginTop:16}}>{videos.map(v=>(<div key={v.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #eee",borderRadius:12,padding:10,marginBottom:8}}><div><b style={{fontSize:14}}>{v.title}</b><div style={{fontSize:11,color:"#666",wordBreak:"break-all"}}>{v.url||v.videoUrl||"No URL yet"}</div></div><button onClick={()=>delVideo(v.id)} style={{background:"#fee",border:"none",borderRadius:999,padding:"6px 12px"}}>Delete</button></div>))}</div></div>)}
+    {(section==="Gaps"||section==="Main Site Gaps") && (<div><p style={{fontSize:13,color:"#555"}}>{section==="Gaps" ? "AtassaTube gaps:" : "Main Site gaps - also controls the site-inside-the-site (TRENDING VIDEOS)."} Ads sit ONLY in gaps. Never over videos, never over main site, never blocking main site or site-inside-site, never auto-playing sound. Ad OFF = that gap is just empty space.</p>{showGaps.map((g)=>{ const gi=gaps.findIndex(x=>x.id===g.id); return (<div key={g.id} style={{border:"1px solid #eee",borderRadius:12,padding:12,marginBottom:10}}><b style={{fontSize:14}}>{g.label}</b><div style={{fontSize:11,color:"#888"}}>Scope: {g.scope}</div><div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}><label style={{fontSize:12}}>Gap size: <select value={g.size} onChange={e=>{ const ng=[...gaps]; ng[gi].size=e.target.value; saveGaps(ng); }}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label><label style={{fontSize:12}}><input type="checkbox" checked={g.enabled} onChange={e=>{ const ng=[...gaps]; ng[gi].enabled=e.target.checked; saveGaps(ng); }} /> Gap ON / OFF</label><label style={{fontSize:12}}><input type="checkbox" checked={g.adEnabled} onChange={e=>{ const ng=[...gaps]; ng[gi].adEnabled=e.target.checked; saveGaps(ng); }} /> Ad in gap ON / OFF</label></div><button onClick={()=>{ moveToTrash({kind:"gap",scope:g.scope,label:g.label,data:g}); const ng=gaps.filter(y=>y.id!==g.id); saveGaps(ng); setSaved("Gap moved to Recycle Bin - 90 days to Restore."); }} style={{background:"#fee",border:"none",borderRadius:999,padding:"6px 12px",fontSize:12,marginTop:8}}>Delete Gap to Recycle Bin</button><input value={g.adSlot} onChange={e=>{ const ng=[...gaps]; ng[gi].adSlot=e.target.value; saveGaps(ng); }} placeholder="Ad Slot number - e.g. 1111111111" style={{width:"100%",padding:10,borderRadius:10,border:"1px solid #ddd",marginTop:8,boxSizing:"border-box"}} /></div>); })}</div>)}
+    {section==="Ads" && (<div style={{border:"1px solid #eee",borderRadius:12,padding:14}}><p><b>Google Analytics ID:</b> {GA_ID}</p><p style={{fontSize:13,color:"#555"}}>Same GA on Main Site, ATASSA AI and AtassaTube - from one Publish.</p><p><b>Google AdSense ID:</b> {ADSENSE_ID}</p><p style={{fontSize:13,color:"#555"}}>Ads show ONLY in gaps you turn ON. Never over videos, never over main site, never blocking.</p></div>)}
+    {isUniversal && (<div><p style={{fontSize:13,color:"#555"}}><b>Universal Control</b> - Studio controls MORE than the listed sections. Add any Text, Size, Number, Figure, Letter / Alphabet, Digit, Sign / Symbol, Signal, Configuration. Main Site + ATASSA AI + AtassaTube all read it from Supabase app_config id=1 on Publish.</p><input value={uKey} onChange={e=>setUKey(e.target.value)} placeholder="Key - e.g. headerTitle, heroSize, priceNumber, figureCaption, letterA, digit9, signPlus, signalLive, configTheme" style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",marginBottom:8,boxSizing:"border-box"}} /><select value={uType} onChange={e=>setUType(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",marginBottom:8}}><option>Text</option><option>Size</option><option>Number</option><option>Figure</option><option>Letter</option><option>Alphabet</option><option>Digit</option><option>Sign</option><option>Signal</option><option>Configuration</option><option>Link</option><option>Color</option><option>Image</option><option>Video</option></select><input value={uVal} onChange={e=>setUVal(e.target.value)} placeholder="Value - e.g. Where Laughter Lives, 24, 100, ₦, A, +, LIVE, dark" style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",marginBottom:8,boxSizing:"border-box"}} /><button onClick={()=>{ if(!uKey||!uVal) return; const nu=[...universal,{key:uKey,value:uVal,type:uType}]; setUniversal(nu); localStorage.setItem("atassatube_universal",JSON.stringify(nu)); setUKey(""); setUVal(""); }} style={{background:"#111",color:"#fff",border:"none",borderRadius:999,padding:"10px 18px",fontWeight:700}}>Add Universal Control</button><div style={{marginTop:12}}>{universal.map((x,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #eee",borderRadius:12,padding:10,marginBottom:8}}><div><b style={{fontSize:13}}>{x.key}</b> <span style={{fontSize:11,color:"#888"}}>({x.type})</span><div style={{fontSize:13}}>{x.value}</div></div><button onClick={()=>{ moveToTrash({kind:"universal",scope:"AtassaTube + Main Site + Site-inside-site",label:x.key,data:x}); const nu=universal.filter((_,j)=>j!==i); setUniversal(nu); localStorage.setItem("atassatube_universal",JSON.stringify(nu)); setSaved("Moved to Recycle Bin."); }} style={{background:"#fee",border:"none",borderRadius:999,padding:"6px 12px"}}>Delete</button></div>))}</div>{section==="Main Site" && <p style={{fontSize:13,color:"#555"}}>Main Site reads GA, gaps, ads, text, sizes, numbers, figures, letters, digits, signs, signals &amp; configuration from app_config id=1. Edit here, Publish, main site updates.</p>}{section==="ATASSA AI" && <p style={{fontSize:13,color:"#555"}}>ATASSA AI reads GA {GA_ID} and all universal controls from app_config id=1.</p>}</div>)}
+    {!isUniversal && section!=="Videos" && section!=="Gaps" && section!=="Main Site Gaps" && section!=="Ads" && (<p style={{fontSize:14,color:"#555"}}>Edit <b>{section}</b> in <code>lib/siteConfig.js</code> - or use <b>Universal</b> to add any Text / Size / Number / Figure / Letter / Digit / Sign / Signal / Configuration for this section - then Publish.</p>)}
+    {section==="Theme" && (<div style={{border:"1px solid #eee",borderRadius:12,padding:14}}><p><b>Light / Dark</b> - same toggle as Main Site. Tap, then Publish, and Main Site + ATASSA AI + AtassaTube + site-inside-the-site all switch together.</p><div style={{display:"flex",gap:8}}><button onClick={()=>{ setTheme("light"); localStorage.setItem("atassa_theme","light"); }} style={{background:theme==="light"?"#111":"#fff",color:theme==="light"?"#fff":"#111",border:"1px solid #ddd",borderRadius:999,padding:"10px 18px"}}>☀️ Light</button><button onClick={()=>{ setTheme("dark"); localStorage.setItem("atassa_theme","dark"); }} style={{background:theme==="dark"?"#111":"#fff",color:theme==="dark"?"#fff":"#111",border:"1px solid #ddd",borderRadius:999,padding:"10px 18px"}}>🌙 Dark</button></div><p style={{fontSize:13,color:"#555"}}>Current: <b>{theme}</b> - preview this Studio in {theme} mode. Publish to apply everywhere.</p></div>)}
+    {section==="Recycle Bin" && (<div><p style={{fontSize:13,color:"#555"}}>90-DAY RULE - covers AtassaTube + Main Site + Site-inside-the-site (TRENDING VIDEOS): Everything you delete from ANY of the three stays here for 90 days. Within 90 days you can Restore or Permanently Delete. After 90 days with no action, it disappears automatically - gone forever. Everything you delete goes here first - videos, text, links, images, figures, numbers, digits, alphabets / letters, symbols, signs, designs, fonts. Nothing is lost until you tap Delete Forever.</p>{trash.length===0 && <p>No deleted items yet.</p>}{trash.map((x,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #eee",borderRadius:12,padding:10,marginBottom:8}}><div><b style={{fontSize:13}}>{x.label}</b><div style={{fontSize:11,color:"#888"}}>{x.kind} - {x.scope||"AtassaTube + Main Site + Site-inside-site"} - deleted {x.deletedAt?.slice(0,10)} - {DAYS_LEFT(x.deletedAt)} days left to Restore</div></div><div style={{display:"flex",gap:6}}><button onClick={()=>restoreFromTrash(i)} style={{background:"#dcfce7",border:"none",borderRadius:999,padding:"6px 12px"}}>Restore</button><button onClick={()=>deleteForever(i)} style={{background:"#fee",border:"none",borderRadius:999,padding:"6px 12px"}}>Delete Forever</button></div></div>))}{trash.length>0 && <button onClick={()=>{ setTrash([]); localStorage.setItem("atassatube_trash","[]"); }} style={{background:"#111",color:"#fff",border:"none",borderRadius:999,padding:"10px 18px"}}>Empty Recycle Bin</button>}</div>)}
+    <button onClick={publish} style={{width:"100%",marginTop:20,background:"#16a34a",color:"#fff",border:"none",borderRadius:999,padding:14,fontWeight:800}}>Publish to Supabase — app_config id=1</button>
+    {saved && <p style={{fontSize:13,textAlign:"center"}}>{saved}</p>}
+    <div style={{marginTop:28,borderTop:"1px solid #eee",paddingTop:12,textAlign:"center",fontSize:12,color:"#555"}}>Studio Admin Panel • GA: {GA_ID} •<br/>AdSense: {ADSENSE_ID}<div style={{fontSize:11,color:"#888",marginTop:4}}>Session-only login • Close tab = logged out • Main Site + ATASSA AI + AtassaTube share this GA + config</div></div>
   </main>);
 }
