@@ -1,7 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
 import { SITE } from "../../lib/siteConfig";
-const FIREBASE_CONFIG = { apiKey: "PASTE_FIREBASE_API_KEY", authDomain: "atassatube-1b360.firebaseapp.com", projectId: "atassatube-1b360", storageBucket: "atassatube-1b360.firebasestorage.app", messagingSenderId: "PASTE_MESSAGING_SENDER_ID", appId: "PASTE_APP_ID" };
+const firebaseConfig = {
+  apiKey: "AIzaSyDJrBih4Hzs1kVU6IbwVL7HMsGaaQZ6buU",
+  authDomain: "atassatube-1b360.firebaseapp.com",
+  projectId: "atassatube-1b360",
+  storageBucket: "atassatube-1b360.firebasestorage.app",
+  messagingSenderId: "380112111095",
+  appId: "1:380112111095:web:82b1965a24de563adf9af2"
+};
 const OWNER_EMAIL = "funnyatassabrand@gmail.com";
 const GA_ID = "G-H2YTGQXC8G";
 const ADSENSE_ID = "ca-pub-5034040629777244";
