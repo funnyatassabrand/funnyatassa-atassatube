@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+"use client";
+export { default } from "../page";
 import { SITE } from "../../lib/siteConfig";
 const GA_ID = "G-H2YTGQXC8G";
 const ADSENSE_ID = "ca-pub-5034040629777244";
