@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { SITE } from "../../lib/siteConfig";
-const firebaseConfig = {
+const FIREBASE_CONFIG= {
   apiKey: "AIzaSyDJrBih4Hzs1kVU6IbwVL7HMsGaaQZ6buU",
   authDomain: "atassatube-1b360.firebaseapp.com",
   projectId: "atassatube-1b360",
@@ -39,7 +39,7 @@ export default function Studio(){
   function deleteForever(idx){ const nt=trash.filter((_,j)=>j!==idx); setTrash(nt); localStorage.setItem("atassatube_trash",JSON.stringify(nt)); }
   function saveGaps(ng){ setGaps(ng); localStorage.setItem("atassatube_gaps",JSON.stringify(ng)); }
   function addVideo(){ if(!title){ setSaved("Type a video title first."); return; } const nv=[...videos,{id:"v"+Date.now(),title,url,category:"Comedy"}]; setVideos(nv); localStorage.setItem("atassatube_videos",JSON.stringify(nv)); setTitle(""); setUrl(""); setSaved("Video saved locally. Tap Publish to make it live everywhere."); }
-  function delVideo(id){ const item=videos.find(v=>v.id===id); if(item) moveToTrash({kind:"video",scope:"AtassaTube + Main Site + Site-inside-site",label:item.title||"Video",data:[STRIPPED] const nv=videos.filter(v=>v.id!==id); setVideos(nv); localStorage.setItem("atassatube_videos",JSON.stringify(nv)); setSaved("Moved to Recycle Bin - not gone forever. Open Recycle Bin to Restore."); }
+  function delVideo(id){ const item=videos.find(v=>v.id===id); if(item) moveToTrash({kind:"video",scope:"AtassaTube + Main Site + Site-inside-site",label:item.title||"Video",data:[STRIPPED] const nv=videos.filter(v=>v.id!==id); setVideos(nv); localStorage.setItem("atassatube_videos",JSON.stringify(nv)); setSaved("Moved to Recycle Bin - not gone forever. Open Recycle Bin to Restore."); }... data:[STRIPPED] const nv=videos.filter...
   async function publish(){ setSaved("Publishing..."); try{ const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL; const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; if(!supabaseUrl||!supabaseKey) throw new Error("Supabase env vars not set in Vercel (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY). Saved locally until you add them."); const res=await fetch(`${supabaseUrl}/rest/v1/app_config?id=eq.1`,{method:"PATCH",headers:{apikey:supabaseKey,Authorization:`Bearer ${supabaseKey}`,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({config:{...SITE,videos,gaps,universal,theme,gaId:GA_ID,adsenseId:ADSENSE_ID,updatedAt:new Date().toISOString()}})}); if(!res.ok) throw new Error("Supabase Publish failed: "+res.status); setSaved("Published! One edit now changes Main Site + ATASSA AI + AtassaTube (app_config id=1)."); }catch(e){ setSaved(e.message); } }
   function logout(){ sessionStorage.removeItem("atassa_studio_session"); setStep("login"); setPassword(""); }
   if(step==="login"){ return (<main style={{fontFamily:"system-ui",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"#fff"}}><form onSubmit={login} style={{width:"100%",maxWidth:360,border:"1px solid #eee",borderRadius:16,padding:20}}><h2 style={{marginTop:0}}>Studio — Owner Login</h2><p style={{fontSize:13,color:"#555"}}>Owner: {OWNER_EMAIL}<br/>Type password only. No new password, no new account.</p><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Owner password" autoFocus style={{width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",boxSizing:"border-box"}} />{err && <p style={{color:"red",fontSize:13}}>{err}</p>}<button disabled={busy} style={{width:"100%",marginTop:12,background:"#e11d48",color:"#fff",border:"none",borderRadius:999,padding:12,fontWeight:700}}>{busy?"Checking...":"Enter Studio"}</button><button type="button" onClick={()=>window.location.href="/"} style={{width:"100%",marginTop:8,background:"#eee",border:"none",borderRadius:999,padding:10}}>Back to AtassaTube</button><p style={{fontSize:11,color:"#888",textAlign:"center"}}>Session-only: closing the tab logs you out. Wrong password fails.</p></form></main>); }
@@ -61,5 +61,4 @@ export default function Studio(){
     {saved && <p style={{fontSize:13,textAlign:"center"}}>{saved}</p>}
     <div style={{marginTop:28,borderTop:"1px solid #eee",paddingTop:12,textAlign:"center",fontSize:12,color:"#555"}}>Studio Admin Panel • GA: {GA_ID} •<br/>AdSense: {ADSENSE_ID}<div style={{fontSize:11,color:"#888",marginTop:4}}>Session-only login • Close tab = logged out • Main Site + ATASSA AI + AtassaTube share this GA + config</div></div>
   </main>);
-      }
 }
