@@ -61,4 +61,4 @@ export default function Studio(){
     {saved && <p style={{fontSize:13,textAlign:"center"}}>{saved}</p>}
     <div style={{marginTop:28,borderTop:"1px solid #eee",paddingTop:12,textAlign:"center",fontSize:12,color:"#555"}}>Studio Admin Panel • GA: {GA_ID} •<br/>AdSense: {ADSENSE_ID}<div style={{fontSize:11,color:"#888",marginTop:4}}>Session-only login • Close tab = logged out • Main Site + ATASSA AI + AtassaTube share this GA + config</div></div>
   </main>);
-}
+      }
